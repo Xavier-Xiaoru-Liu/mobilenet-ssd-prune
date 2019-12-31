@@ -29,13 +29,13 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--dataset_type", default="voc", type=str,
                     help='Specify dataset type. Currently support voc and open_images.')
 
-parser.add_argument('--datasets', nargs='+', help='Dataset directory path')
-parser.add_argument('--validation_dataset', help='Dataset directory path')
+parser.add_argument('--datasets', nargs='+', default=['/home/xavier/Data/VOC/train/VOC2007','/home/xavier/Data/VOC/train/VOC2012'], help='Dataset directory path')
+parser.add_argument('--validation_dataset', default='/home/xavier/Data/VOC/val/VOC2007', help='Dataset directory path')
 parser.add_argument('--balance_data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
 
 
-parser.add_argument('--net', default="vgg16-ssd",
+parser.add_argument('--net', default="mb1-ssd",
                     help="The network architecture, it can be mb1-ssd, mb1-lite-ssd, mb2-ssd-lite or vgg16-ssd.")
 parser.add_argument('--freeze_base_net', action='store_true',
                     help="Freeze base net layers.")
@@ -64,7 +64,7 @@ parser.add_argument('--extra_layers_lr', default=None, type=float,
 parser.add_argument('--base_net',
                     help='Pretrained base model')
 parser.add_argument('--pretrained_ssd', help='Pre-trained base model')
-parser.add_argument('--resume', default=None, type=str,
+parser.add_argument('--resume', default='models/mobilenet-v1-ssd-mp-0_675.pth', type=str,
                     help='Checkpoint state_dict file to resume training from')
 
 # Scheduler
@@ -156,10 +156,10 @@ def test(loader, net, criterion, device):
         labels = labels.to(device)
         num += 1
 
-        with torch.no_grad():
-            confidence, locations = net(images)
-            regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)
-            loss = regression_loss + classification_loss
+        confidence, locations = net(images)
+        regression_loss, classification_loss = criterion(confidence, locations, labels, boxes)
+        loss = regression_loss + classification_loss
+        loss.backward()
 
         running_loss += loss.item()
         running_regression_loss += regression_loss.item()
@@ -238,7 +238,11 @@ if __name__ == '__main__':
                             num_workers=args.num_workers,
                             shuffle=False)
     logging.info("Build network.")
+
+    from xavier_lib import MaskManager
+    manager = MaskManager()
     net = create_net(num_classes)
+    manager(net)
     min_loss = -10000.0
     last_epoch = -1
 
@@ -313,7 +317,13 @@ if __name__ == '__main__':
         sys.exit(1)
 
     logging.info(f"Start training from epoch {last_epoch + 1}.")
-    for epoch in range(last_epoch + 1, args.num_epochs):
+
+    print(test(train_loader, net, criterion, DEVICE))
+    manager.computer_statistic()
+    manager.prune(300)
+    manager.pruning_overview()
+    print(test(train_loader, net, criterion, DEVICE))
+    for epoch in range(100, args.num_epochs):
         scheduler.step()
         train(train_loader, net, criterion, optimizer,
               device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)

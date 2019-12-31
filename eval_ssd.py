@@ -22,7 +22,7 @@ parser.add_argument("--trained_model", type=str)
 
 parser.add_argument("--dataset_type", default="voc", type=str,
                     help='Specify dataset type. Currently support voc and open_images.')
-parser.add_argument("--dataset", type=str, help="The root directory of the VOC dataset or Open Images dataset.")
+parser.add_argument("--dataset", type=str, default='/home/xavier/Data/VOC/val/VOC2007', help="The root directory of the VOC dataset or Open Images dataset.")
 parser.add_argument("--label_file", type=str, help="The label file path.")
 parser.add_argument("--use_cuda", type=str2bool, default=True)
 parser.add_argument("--use_2007_metric", type=str2bool, default=True)
