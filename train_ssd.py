@@ -29,8 +29,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--dataset_type", default="voc", type=str,
                     help='Specify dataset type. Currently support voc and open_images.')
 
-parser.add_argument('--datasets', nargs='+', default=['/home/xavier/Data/VOC/train/VOC2007','/home/xavier/Data/VOC/train/VOC2012'], help='Dataset directory path')
-parser.add_argument('--validation_dataset', default='/home/xavier/Data/VOC/val/VOC2007', help='Dataset directory path')
+parser.add_argument('--datasets', nargs='+', default=['/home/dl/Downloads/Data/train/VOC2007','/home/dl/Downloads/Data/train/VOC2012'], help='Dataset directory path')
+parser.add_argument('--validation_dataset', default='/home/dl/Downloads/Data/val/VOCdevkit/VOC2007', help='Dataset directory path')
 parser.add_argument('--balance_data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
 
@@ -319,11 +319,12 @@ if __name__ == '__main__':
     logging.info(f"Start training from epoch {last_epoch + 1}.")
 
     print(test(train_loader, net, criterion, DEVICE))
-    manager.computer_statistic()
-    manager.prune(300)
+    # manager.computer_statistic()
+    # manager.prune(3000, 'crldr')
     manager.pruning_overview()
     print(test(train_loader, net, criterion, DEVICE))
-    for epoch in range(100, args.num_epochs):
+    for epoch in range(119, args.num_epochs):
+        epoch += 1
         scheduler.step()
         train(train_loader, net, criterion, optimizer,
               device=DEVICE, debug_steps=args.debug_steps, epoch=epoch)

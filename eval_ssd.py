@@ -147,6 +147,9 @@ if __name__ == '__main__':
         sys.exit(1)  
 
     timer.start("Load Model")
+    from xavier_lib import MaskManager
+    manager = MaskManager(False)
+    manager(net)
     net.load(args.trained_model)
     net = net.to(DEVICE)
     print(f'It took {timer.end("Load Model")} seconds to load the model.')
@@ -166,14 +169,15 @@ if __name__ == '__main__':
         sys.exit(1)
 
     results = []
+    manager.pruning_overview()
     for i in range(len(dataset)):
-        print("process image", i)
+        #print("process image", i)
         timer.start("Load Image")
         image = dataset.get_image(i)
-        print("Load Image: {:4f} seconds.".format(timer.end("Load Image")))
+        #print("Load Image: {:4f} seconds.".format(timer.end("Load Image")))
         timer.start("Predict")
         boxes, labels, probs = predictor.predict(image)
-        print("Prediction: {:4f} seconds.".format(timer.end("Predict")))
+        #print("Prediction: {:4f} seconds.".format(timer.end("Predict")))
         indexes = torch.ones(labels.size(0), 1, dtype=torch.float32) * i
         results.append(torch.cat([
             indexes.reshape(-1, 1),
