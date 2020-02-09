@@ -29,8 +29,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--dataset_type", default="voc", type=str,
                     help='Specify dataset type. Currently support voc and open_images.')
 
-parser.add_argument('--datasets', nargs='+', default=['/home/dl/Downloads/Data/train/VOC2007','/home/dl/Downloads/Data/train/VOC2012'], help='Dataset directory path')
-parser.add_argument('--validation_dataset', default='/home/dl/Downloads/Data/val/VOCdevkit/VOC2007', help='Dataset directory path')
+parser.add_argument('--datasets', nargs='+', default=['/home/xavier/Data/VOC/train/VOC2007','/home/xavier/Data/VOC/train/VOC2012'], help='Dataset directory path')
+parser.add_argument('--validation_dataset', default='/home/xavier/Data/VOC/val/VOC2007', help='Dataset directory path')
 parser.add_argument('--balance_data', action='store_true',
                     help="Balance training data by down-sampling more frequent labels.")
 
@@ -80,7 +80,7 @@ parser.add_argument('--t_max', default=120, type=float,
                     help='T_max value for Cosine Annealing Scheduler.')
 
 # Train params
-parser.add_argument('--batch_size', default=32, type=int,
+parser.add_argument('--batch_size', default=5, type=int,
                     help='Batch size for training')
 parser.add_argument('--num_epochs', default=120, type=int,
                     help='the number epochs')
@@ -239,10 +239,8 @@ if __name__ == '__main__':
                             shuffle=False)
     logging.info("Build network.")
 
-    from xavier_lib import MaskManager
-    manager = MaskManager()
     net = create_net(num_classes)
-    manager(net)
+
     min_loss = -10000.0
     last_epoch = -1
 
@@ -294,6 +292,14 @@ if __name__ == '__main__':
         net.init_from_pretrained_ssd(args.pretrained_ssd)
     logging.info(f'Took {timer.end("Load Model"):.2f} seconds to load the model.')
 
+    from RldrInPruning.converters import Converter
+    from RldrInPruning import MaskManager
+
+    manager = MaskManager()
+    converter = Converter()
+    converter(net)
+    manager(net)
+
     net.to(DEVICE)
 
     criterion = MultiboxLoss(config.priors, iou_threshold=0.5, neg_pos_ratio=3,
@@ -319,8 +325,7 @@ if __name__ == '__main__':
     logging.info(f"Start training from epoch {last_epoch + 1}.")
 
     print(test(train_loader, net, criterion, DEVICE))
-    # manager.computer_statistic()
-    # manager.prune(3000, 'crldr')
+    manager.prune(0, 'rldr')
     manager.pruning_overview()
     print(test(train_loader, net, criterion, DEVICE))
     for epoch in range(119, args.num_epochs):

@@ -147,7 +147,7 @@ if __name__ == '__main__':
         sys.exit(1)  
 
     timer.start("Load Model")
-    from xavier_lib import MaskManager
+    from RldrInPruning import MaskManager
     manager = MaskManager(False)
     manager(net)
     net.load(args.trained_model)
