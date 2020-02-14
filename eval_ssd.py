@@ -16,14 +16,14 @@ from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite, create
 
 
 parser = argparse.ArgumentParser(description="SSD Evaluation on VOC Dataset.")
-parser.add_argument('--net', default="vgg16-ssd",
+parser.add_argument('--net', default="mb1-ssd",
                     help="The network architecture, it should be of mb1-ssd, mb1-ssd-lite, mb2-ssd-lite or vgg16-ssd.")
-parser.add_argument("--trained_model", type=str)
+parser.add_argument("--trained_model", type=str,default='models/mb1-ssd-Epoch-120-Loss-3.8706286343267537.pth')
 
 parser.add_argument("--dataset_type", default="voc", type=str,
                     help='Specify dataset type. Currently support voc and open_images.')
 parser.add_argument("--dataset", type=str, default='/home/xavier/Data/VOC/val/VOC2007', help="The root directory of the VOC dataset or Open Images dataset.")
-parser.add_argument("--label_file", type=str, help="The label file path.")
+parser.add_argument("--label_file", type=str, default='models/voc-model-labels.txt', help="The label file path.")
 parser.add_argument("--use_cuda", type=str2bool, default=True)
 parser.add_argument("--use_2007_metric", type=str2bool, default=True)
 parser.add_argument("--nms_method", type=str, default="hard")
@@ -147,11 +147,22 @@ if __name__ == '__main__':
         sys.exit(1)  
 
     timer.start("Load Model")
+
+    from RldrInPruning import ForwardMapManger
+    map_manager = ForwardMapManger(net)
+    dummy = torch.randn(1, 3, 300, 300)
+    net(dummy)
+    map_manager.remove()
+
     from RldrInPruning import MaskManager
     manager = MaskManager(False)
     manager(net)
     net.load(args.trained_model)
-    net = net.to(DEVICE)
+
+    manager.real_prune_one_way(map_manager)
+
+    net.priors = net.config.priors.to('cuda:0')
+
     print(f'It took {timer.end("Load Model")} seconds to load the model.')
     if args.net == 'vgg16-ssd':
         predictor = create_vgg_ssd_predictor(net, nms_method=args.nms_method, device=DEVICE)

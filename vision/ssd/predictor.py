@@ -16,10 +16,8 @@ class Predictor:
         self.nms_method = nms_method
 
         self.sigma = sigma
-        if device:
-            self.device = device
-        else:
-            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.device = torch.device("cuda:0")
 
         self.net.to(self.device)
         self.net.eval()

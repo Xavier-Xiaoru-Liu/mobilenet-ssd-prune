@@ -292,12 +292,9 @@ if __name__ == '__main__':
         net.init_from_pretrained_ssd(args.pretrained_ssd)
     logging.info(f'Took {timer.end("Load Model"):.2f} seconds to load the model.')
 
-    from RldrInPruning.converters import Converter
     from RldrInPruning import MaskManager
 
     manager = MaskManager()
-    converter = Converter()
-    converter(net)
     manager(net)
 
     net.to(DEVICE)
@@ -325,7 +322,7 @@ if __name__ == '__main__':
     logging.info(f"Start training from epoch {last_epoch + 1}.")
 
     print(test(train_loader, net, criterion, DEVICE))
-    manager.prune(0, 'rldr')
+    manager.prune(2000, 'rldr')
     manager.pruning_overview()
     print(test(train_loader, net, criterion, DEVICE))
     for epoch in range(119, args.num_epochs):
